@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"io"
+	"log"
 	"os"
 
 	"github.com/PaesslerAG/gval"
@@ -36,13 +37,13 @@ func main() {
 	case 0:
 		src = os.Stdin
 	default:
-		panic("Invalid arguments")
+		log.Fatalln("Invalid arguments")
 	}
 
 	if *jsonpathQuery != "" {
 		jsonpathEvalFn, err = jsonpath.New(*jsonpathQuery)
 		if err != nil {
-			panic(err)
+			log.Fatalln(err)
 		}
 	}
 
@@ -53,15 +54,15 @@ func main() {
 	for scanner.Scan() {
 		var buf interface{}
 		if err = json.Unmarshal(scanner.Bytes(), &buf); err != nil {
-			panic(err)
+			log.Fatalln(err)
 		}
 		buf, err = jsonpathEvalFn(context.Background(), buf)
 		if err != nil {
-			panic(err)
+			log.Fatalln(err)
 		}
 		enc.Encode(buf)
 	}
 	if err = scanner.Err(); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }
