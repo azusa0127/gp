@@ -1,9 +1,12 @@
-# jg - A commandline json processor in Go
+# jg - A command-line JSON processor in Go
 
 ## Install
 
+_`go` 1.6 or later is needed for install from source code._
+
 ```bash
 go get -u github.com/azusa0127/jg
+go install github.com/azusa0127/jg
 ```
 
 ## Example
