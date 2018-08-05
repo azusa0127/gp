@@ -13,11 +13,26 @@ import (
 
 	"github.com/PaesslerAG/gval"
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/TylerBrock/colorjson"
+	"github.com/fatih/color"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+var lineBreak = []byte("\n")
+
 var jsonpathQuery = flag.String("q", "", "Query in jsonpath")
 var jsonpathEvalFn gval.Evaluable = func(c context.Context, v interface{}) (interface{}, error) { return v, nil }
+var jsonFormatter = &colorjson.Formatter{
+	KeyColor:        color.New(color.FgWhite),
+	StringColor:     color.New(color.FgGreen),
+	BoolColor:       color.New(color.FgYellow),
+	NumberColor:     color.New(color.FgCyan),
+	NullColor:       color.New(color.FgMagenta),
+	StringMaxLength: 0,
+	DisabledColor:   false,
+	Indent:          2,
+	RawStrings:      false,
+}
 
 var bash64EncodeFlag = flag.Bool("base64e", false, "Flag to encode the result string with base64")
 var bash64DecodeFlag = flag.Bool("base64d", false, "Flag to decode the result string with base64")
@@ -46,6 +61,15 @@ func base64helper(v interface{}, w io.Writer, encode bool) error {
 	return err
 }
 
+func jsonHelper(v interface{}, w io.Writer) error {
+	b, err := jsonFormatter.Marshal(v)
+	if err != nil {
+		return err
+	}
+	w.Write(b)
+	return err
+}
+
 func process(v interface{}) (interface{}, error) {
 	var err error
 	v, err = jsonpathEvalFn(context.Background(), v)
@@ -59,6 +83,7 @@ func process(v interface{}) (interface{}, error) {
 func main() {
 	flag.Parse()
 	var src io.Reader
+	var dst = os.Stdout
 	var err error
 	args := flag.Args()
 	switch len(args) {
@@ -84,8 +109,6 @@ func main() {
 			log.Fatalln(err)
 		}
 	}
-	jsonEnc := json.NewEncoder(os.Stdout)
-	jsonEnc.SetIndent("", "  ")
 
 	scanner := bufio.NewScanner(src)
 	for scanner.Scan() {
@@ -101,15 +124,16 @@ func main() {
 
 		switch {
 		case *bash64EncodeFlag:
-			err = base64helper(buf, os.Stdout, true)
+			err = base64helper(buf, dst, true)
 		case *bash64DecodeFlag:
-			err = base64helper(buf, os.Stdout, false)
+			err = base64helper(buf, dst, false)
 		default:
-			err = jsonEnc.Encode(buf)
+			err = jsonHelper(buf, dst)
 		}
 		if err != nil {
 			log.Fatalln(err)
 		}
+		dst.Write(lineBreak)
 	}
 	if err = scanner.Err(); err != nil {
 		log.Fatalln(err)
