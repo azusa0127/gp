@@ -15,8 +15,8 @@ import (
 
 var jsonpathQuery = flag.String("q", "", "Query in jsonpath")
 
-var bash64EncodeFlag = flag.Bool("base64e", false, "Flag to encode the result string with base64")
-var bash64DecodeFlag = flag.Bool("base64d", false, "Flag to decode the result string with base64")
+var base64encodeFlag = flag.Bool("base64e", false, "Flag to encode the result string with base64")
+var base64decodeFlag = flag.Bool("base64d", false, "Flag to decode the result string with base64")
 
 func base64helper(v interface{}, w io.Writer, encode bool) error {
 	var err error
@@ -68,8 +68,10 @@ func main() {
 	var p processor.Processor
 
 	switch {
-	case *bash64EncodeFlag:
-		p = processor.NewBase64encodeProcessor(src, dst)
+	case *base64encodeFlag:
+		p = processor.NewBase64Processor(src, dst, true)
+	case *base64decodeFlag:
+		p = processor.NewBase64Processor(src, dst, false)
 	default:
 		p = processor.NewJSONProcessor(src, dst, *jsonpathQuery)
 	}
