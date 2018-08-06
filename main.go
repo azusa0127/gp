@@ -69,9 +69,9 @@ func main() {
 
 	switch {
 	case *base64encodeFlag:
-		p = processor.NewBase64Processor(src, dst, true)
+		p = processor.NewBase64EncodeProcessor(src, dst)
 	case *base64decodeFlag:
-		p = processor.NewBase64Processor(src, dst, false)
+		p = processor.NewBase64DecodeProcessor(src, dst)
 	default:
 		p = processor.NewJSONProcessor(src, dst, *jsonpathQuery)
 	}

@@ -10,9 +10,6 @@ type Processor interface {
 
 var jsonFormatter = colorjson.NewFormatter()
 
-// LineBreak is the line break symbol in byte
-var LineBreak = byte('\n')
-
 // LineBreakBytes is the line break symbol in byte array
 var LineBreakBytes = []byte("\n")
 

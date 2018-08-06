@@ -41,25 +41,22 @@ func NewJSONProcessor(src io.Reader, dst io.Writer, jsonpathQuery string) *JSONP
 // Process processes the stream and returns possible fatal error
 func (j *JSONProcessor) Process() error {
 	var err error
+	var v interface{}
+	var buf []byte
 	for j.s.Scan() {
-		var buf interface{}
-		if err = json.Unmarshal(j.s.Bytes(), &buf); err != nil {
+		if err = json.Unmarshal(j.s.Bytes(), &v); err != nil {
 			return err
 		}
-		buf, err = j.jsonpathEvalFn(context.Background(), buf)
-		if err != nil {
+		if v, err = j.jsonpathEvalFn(context.Background(), v); err != nil {
 			return err
 		}
-		b, err := jsonFormatter.Marshal(buf)
-		if err != nil {
+		if buf, err = jsonFormatter.Marshal(v); err != nil {
 			return err
 		}
-		_, err = j.w.Write(b)
-		if err != nil {
+		if _, err = j.w.Write(buf); err != nil {
 			return err
 		}
-		_, err = j.w.Write(LineBreakBytes)
-		if err != nil {
+		if _, err = j.w.Write(LineBreakBytes); err != nil {
 			return err
 		}
 	}
