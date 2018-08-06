@@ -13,13 +13,11 @@ import (
 
 // JSONProcessor is the Processor implementation for JSON input and output
 type JSONProcessor struct {
-	s              *bufio.Scanner
-	w              io.Writer
 	jsonpathEvalFn gval.Evaluable
 }
 
 // NewJSONProcessor creates and initializes an JSONProcessor
-func NewJSONProcessor(src io.Reader, dst io.Writer, jsonpathQuery string) *JSONProcessor {
+func NewJSONProcessor(jsonpathQuery string) *JSONProcessor {
 	var evalFn gval.Evaluable
 	if jsonpathQuery != "" {
 		var err error
@@ -32,19 +30,17 @@ func NewJSONProcessor(src io.Reader, dst io.Writer, jsonpathQuery string) *JSONP
 	}
 
 	return &JSONProcessor{
-		s:              bufio.NewScanner(src),
-		w:              dst,
 		jsonpathEvalFn: evalFn,
 	}
 }
 
 // Process processes the stream and returns possible fatal error
-func (j *JSONProcessor) Process() error {
+func (j *JSONProcessor) Process(s *bufio.Scanner, w io.Writer) error {
 	var err error
 	var v interface{}
 	var buf []byte
-	for j.s.Scan() {
-		if err = json.Unmarshal(j.s.Bytes(), &v); err != nil {
+	for s.Scan() {
+		if err = json.Unmarshal(s.Bytes(), &v); err != nil {
 			return err
 		}
 		if v, err = j.jsonpathEvalFn(context.Background(), v); err != nil {
@@ -53,15 +49,12 @@ func (j *JSONProcessor) Process() error {
 		if buf, err = jsonFormatter.Marshal(v); err != nil {
 			return err
 		}
-		if _, err = j.w.Write(buf); err != nil {
+		if _, err = w.Write(buf); err != nil {
 			return err
 		}
-		if _, err = j.w.Write(LineBreakBytes); err != nil {
+		if _, err = w.Write(LineBreakBytes); err != nil {
 			return err
 		}
 	}
-	if err = j.s.Err(); err != nil {
-		return err
-	}
-	return nil
+	return s.Err()
 }

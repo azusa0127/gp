@@ -1,11 +1,16 @@
 package processor
 
-import "github.com/TylerBrock/colorjson"
+import (
+	"bufio"
+	"io"
+
+	"github.com/TylerBrock/colorjson"
+)
 
 // Processor is the interface of stream processors
 type Processor interface {
 	// Process processes the stream and returns possible fatal error
-	Process() error
+	Process(src *bufio.Scanner, dst io.Writer) error
 }
 
 var jsonFormatter = colorjson.NewFormatter()

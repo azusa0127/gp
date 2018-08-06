@@ -1,9 +1,8 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
-	"encoding/base64"
-	"encoding/json"
 	"flag"
 	"io"
 	"log"
@@ -14,33 +13,8 @@ import (
 )
 
 var jsonpathQuery = flag.String("q", "", "Query in jsonpath")
-
 var base64encodeFlag = flag.Bool("base64e", false, "Flag to encode the result string with base64")
 var base64decodeFlag = flag.Bool("base64d", false, "Flag to decode the result string with base64")
-
-func base64helper(v interface{}, w io.Writer, encode bool) error {
-	var err error
-	var buf *bytes.Buffer
-	switch v.(type) {
-	case string:
-		buf = bytes.NewBufferString(v.(string))
-	case []byte:
-		buf = bytes.NewBuffer(v.([]byte))
-	default:
-		b, err := json.Marshal(v)
-		if err != nil {
-			return err
-		}
-		buf = bytes.NewBuffer(b)
-	}
-
-	if encode {
-		_, err = io.Copy(base64.NewEncoder(base64.StdEncoding, w), buf)
-	} else {
-		_, err = io.Copy(w, base64.NewDecoder(base64.StdEncoding, buf))
-	}
-	return err
-}
 
 func main() {
 	flag.Parse()
@@ -69,14 +43,14 @@ func main() {
 
 	switch {
 	case *base64encodeFlag:
-		p = processor.NewBase64EncodeProcessor(src, dst)
+		p = processor.NewBase64EncodeProcessor()
 	case *base64decodeFlag:
-		p = processor.NewBase64DecodeProcessor(src, dst)
+		p = processor.NewBase64DecodeProcessor()
 	default:
-		p = processor.NewJSONProcessor(src, dst, *jsonpathQuery)
+		p = processor.NewJSONProcessor(*jsonpathQuery)
 	}
 
-	if err = p.Process(); err != nil {
+	if err = p.Process(bufio.NewScanner(src), dst); err != nil {
 		log.Fatalln(err)
 	}
 }
