@@ -13,14 +13,18 @@ import (
 )
 
 var jsonpathQuery = flag.String("q", "", "Query in jsonpath")
+var jsonCompressMode = flag.Bool("c", false, "Compress Mode")
+
+var jsonFlag = flag.Bool("json", true, "Flag to process JSON stream")
 var base64encodeFlag = flag.Bool("base64e", false, "Flag to encode the result string with base64")
 var base64decodeFlag = flag.Bool("base64d", false, "Flag to decode the result string with base64")
+
+var inputProcessor = flag.String("i", "text", "InputProcessor [json|base64|text]")
+var outputProcessor = flag.String("o", "text", "OutputProcessor [json|base64|text]")
 
 func main() {
 	flag.Parse()
 	var src io.Reader
-	var dst = os.Stdout
-	var err error
 	args := flag.Args()
 	switch len(args) {
 	case 2:
@@ -39,18 +43,53 @@ func main() {
 		log.Fatalln("Invalid arguments")
 	}
 
-	var p processor.Processor
-
+	var in, out processor.Processor
 	switch {
-	case *base64encodeFlag:
-		p = processor.NewBase64EncodeProcessor()
+	case *jsonFlag:
+		in = processor.NewJSONProcessor(*jsonpathQuery, *jsonCompressMode)
+		out = in
 	case *base64decodeFlag:
-		p = processor.NewBase64DecodeProcessor()
+		in = processor.NewBase64DecodeProcessor()
+		out = processor.TextProcessorPTR
+	case *base64encodeFlag:
+		in = processor.NewBase64EncodeProcessor()
+		out = processor.TextProcessorPTR
 	default:
-		p = processor.NewJSONProcessor(*jsonpathQuery)
+		switch *inputProcessor {
+		case "json":
+			in = processor.NewJSONProcessor(*jsonpathQuery, *jsonCompressMode)
+		case "base64e":
+			in = processor.NewBase64EncodeProcessor()
+		case "base64d":
+			in = processor.NewBase64DecodeProcessor()
+		case "text":
+			in = processor.TextProcessorPTR
+		default:
+			log.Fatalln("Invalid input processor - " + *inputProcessor)
+		}
+
+		switch *outputProcessor {
+		case "json":
+			out = processor.NewJSONProcessor(*jsonpathQuery, *jsonCompressMode)
+		case "base64e":
+			out = processor.NewBase64EncodeProcessor()
+		case "base64d":
+			out = processor.NewBase64DecodeProcessor()
+		case "text":
+			out = processor.TextProcessorPTR
+		default:
+			log.Fatalln("Invalid output processor - " + *outputProcessor)
+		}
 	}
 
-	if err = p.Process(bufio.NewScanner(src), dst); err != nil {
+	var bufChan = make(chan interface{})
+	var dst = os.Stdout
+	go func() {
+		if err := in.ParseStream(bufio.NewScanner(src), bufChan); err != nil {
+			log.Fatalln(err)
+		}
+	}()
+	if err := out.PushStream(bufChan, dst); err != nil {
 		log.Fatalln(err)
 	}
 }

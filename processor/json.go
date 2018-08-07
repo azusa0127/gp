@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 
+	"github.com/TylerBrock/colorjson"
+
 	"github.com/PaesslerAG/gval"
 	"github.com/PaesslerAG/jsonpath"
 )
@@ -14,10 +16,11 @@ import (
 // JSONProcessor is the Processor implementation for JSON input and output
 type JSONProcessor struct {
 	jsonpathEvalFn gval.Evaluable
+	marshalFn      func(v interface{}) ([]byte, error)
 }
 
 // NewJSONProcessor creates and initializes an JSONProcessor
-func NewJSONProcessor(jsonpathQuery string) *JSONProcessor {
+func NewJSONProcessor(jsonpathQuery string, compressMode bool) *JSONProcessor {
 	var evalFn gval.Evaluable
 	if jsonpathQuery != "" {
 		var err error
@@ -29,32 +32,48 @@ func NewJSONProcessor(jsonpathQuery string) *JSONProcessor {
 		evalFn = func(c context.Context, v interface{}) (interface{}, error) { return v, nil }
 	}
 
+	var marshalFn func(v interface{}) ([]byte, error)
+	if compressMode {
+		marshalFn = json.Marshal
+	} else {
+		jsonFormatter := colorjson.NewFormatter()
+		jsonFormatter.Indent = 2
+		marshalFn = jsonFormatter.Marshal
+	}
+
 	return &JSONProcessor{
 		jsonpathEvalFn: evalFn,
+		marshalFn:      marshalFn,
 	}
 }
 
-// Process processes the stream and returns possible fatal error
-func (j *JSONProcessor) Process(s *bufio.Scanner, w io.Writer) error {
-	var err error
+func (j *JSONProcessor) ParseStream(s *bufio.Scanner, c chan<- interface{}) (err error) {
+	defer close(c)
 	var v interface{}
-	var buf []byte
 	for s.Scan() {
-		if err = json.Unmarshal(s.Bytes(), &v); err != nil {
-			return err
+		if err = json.Unmarshal(s.Bytes(), v); err != nil {
+			return
 		}
 		if v, err = j.jsonpathEvalFn(context.Background(), v); err != nil {
-			return err
+			return
 		}
-		if buf, err = jsonFormatter.Marshal(v); err != nil {
-			return err
-		}
-		if _, err = w.Write(buf); err != nil {
-			return err
-		}
-		if _, err = w.Write(LineBreakBytes); err != nil {
-			return err
-		}
+		c <- v
 	}
 	return s.Err()
+}
+
+func (j *JSONProcessor) PushStream(c <-chan interface{}, w io.Writer) (err error) {
+	var buf []byte
+	for v := range c {
+		if _, err = j.marshalFn(v); err != nil {
+			return
+		}
+		if _, err = w.Write(buf); err != nil {
+			return
+		}
+		if _, err = w.Write(LineBreakBytes); err != nil {
+			return
+		}
+	}
+	return nil
 }
