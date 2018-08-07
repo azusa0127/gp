@@ -3,24 +3,23 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
-	"encoding/json"
 	"flag"
 	"io"
 	"log"
 	"os"
 
-	"github.com/PaesslerAG/gval"
-	"github.com/PaesslerAG/jsonpath"
+	"github.com/azusa0127/gsp/processor"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 var jsonpathQuery = flag.String("q", "", "Query in jsonpath")
-var jsonpathEvalFn gval.Evaluable = func(c context.Context, v interface{}) (interface{}, error) { return v, nil }
+var base64encodeFlag = flag.Bool("base64e", false, "Flag to encode the result string with base64")
+var base64decodeFlag = flag.Bool("base64d", false, "Flag to decode the result string with base64")
 
 func main() {
 	flag.Parse()
 	var src io.Reader
+	var dst = os.Stdout
 	var err error
 	args := flag.Args()
 	switch len(args) {
@@ -40,29 +39,18 @@ func main() {
 		log.Fatalln("Invalid arguments")
 	}
 
-	if *jsonpathQuery != "" {
-		jsonpathEvalFn, err = jsonpath.New(*jsonpathQuery)
-		if err != nil {
-			log.Fatalln(err)
-		}
+	var p processor.Processor
+
+	switch {
+	case *base64encodeFlag:
+		p = processor.NewBase64EncodeProcessor()
+	case *base64decodeFlag:
+		p = processor.NewBase64DecodeProcessor()
+	default:
+		p = processor.NewJSONProcessor(*jsonpathQuery)
 	}
 
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-
-	scanner := bufio.NewScanner(src)
-	for scanner.Scan() {
-		var buf interface{}
-		if err = json.Unmarshal(scanner.Bytes(), &buf); err != nil {
-			log.Fatalln(err)
-		}
-		buf, err = jsonpathEvalFn(context.Background(), buf)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		enc.Encode(buf)
-	}
-	if err = scanner.Err(); err != nil {
+	if err = p.Process(bufio.NewScanner(src), dst); err != nil {
 		log.Fatalln(err)
 	}
 }

@@ -1,0 +1,2 @@
+{"menu":{"id":"file","value":"File","hide":false,"popup":{"menuitem":[{"value":"New","onclick":"CreateNewDoc()","mode":744},{"value":"Open","onclick":"OpenDoc()"},{"value":"Close","onclick":"CloseDoc()"}]}}}
+{"menu":{"id":"folder","value":"Folder","hide":true,"popup":{"menuitem":[{"value":"New","onclick":"CreateNewDir()","mode":755},{"value":"Open","onclick":"OpenDir()"}]}}}
