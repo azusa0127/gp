@@ -22,8 +22,11 @@ var base64decodeFlag = flag.Bool("base64d", false, "Flag to decode the result st
 var inputProcessor = flag.String("i", "text", "InputProcessor [json|base64|text]")
 var outputProcessor = flag.String("o", "text", "OutputProcessor [json|base64|text]")
 
+var lineBreakBytes = []byte("\n")
+
 func main() {
 	flag.Parse()
+	var err error
 	var src io.Reader
 	args := flag.Args()
 	switch len(args) {
@@ -43,27 +46,20 @@ func main() {
 		log.Fatalln("Invalid arguments")
 	}
 
-	var in, out processor.Processor
+	var p processor.Processor
 	switch {
 	case *jsonFlag:
-		in = processor.NewJSONProcessor(*jsonpathQuery, *jsonCompressMode)
-		out = in
+		jp := processor.NewJSONProcessor(*jsonpathQuery, *jsonCompressMode)
+		p = processor.NewMixedProcessor(jp, jp)
 	case *base64decodeFlag:
-		in = processor.NewBase64DecodeProcessor()
-		out = processor.TextProcessorPTR
+		p = processor.NewBase64DecodeProcessor()
 	case *base64encodeFlag:
-		in = processor.NewBase64EncodeProcessor()
-		out = processor.TextProcessorPTR
+		p = processor.NewBase64EncodeProcessor()
 	default:
+		var in, out processor.ObjectProcessor
 		switch *inputProcessor {
 		case "json":
 			in = processor.NewJSONProcessor(*jsonpathQuery, *jsonCompressMode)
-		case "base64e":
-			in = processor.NewBase64EncodeProcessor()
-		case "base64d":
-			in = processor.NewBase64DecodeProcessor()
-		case "text":
-			in = processor.TextProcessorPTR
 		default:
 			log.Fatalln("Invalid input processor - " + *inputProcessor)
 		}
@@ -71,25 +67,27 @@ func main() {
 		switch *outputProcessor {
 		case "json":
 			out = processor.NewJSONProcessor(*jsonpathQuery, *jsonCompressMode)
-		case "base64e":
-			out = processor.NewBase64EncodeProcessor()
-		case "base64d":
-			out = processor.NewBase64DecodeProcessor()
-		case "text":
-			out = processor.TextProcessorPTR
 		default:
 			log.Fatalln("Invalid output processor - " + *outputProcessor)
 		}
+		p = processor.NewMixedProcessor(in, out)
 	}
 
-	var bufChan = make(chan interface{})
 	var dst = os.Stdout
-	go func() {
-		if err := in.ParseStream(bufio.NewScanner(src), bufChan); err != nil {
+	var buf []byte
+	s := bufio.NewScanner(src)
+	for s.Scan() {
+		if buf, err = p.Process(buf, s.Bytes()); err != nil {
 			log.Fatalln(err)
 		}
-	}()
-	if err := out.PushStream(bufChan, dst); err != nil {
+		if _, err = dst.Write(buf); err != nil {
+			log.Fatalln(err)
+		}
+		if _, err = dst.Write(lineBreakBytes); err != nil {
+			log.Fatalln(err)
+		}
+	}
+	if err = s.Err(); err != nil {
 		log.Fatalln(err)
 	}
 }
