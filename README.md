@@ -19,18 +19,24 @@ go install github.com/azusa0127/gsp
 echo '{"n":123,"t":"foo"}\n{"n":789,"t":"bar"}' | gsp
 ```
 
-### Query JSON with jsonpath
+### Query JSON with [JSMEPath](http://jmespath.org/)
 
 ```bash
-echo '{"n":123,"t":"foo"}\n{"n":789,"t":"bar"}' | gsp $.n
+echo '{"n":123,"t":"foo"}\n{"n":789,"t":"bar"}' | gsp n
 ```
 
 ```bash
-gsp -q=$.n '{"n":123,"t":"foo"}'
+gsp -q=n '{"n":123,"t":"foo"}'
 ```
 
 ```bash
-gsp '{"n":123,"t":"foo"}' $.n
+gsp '{"n":123,"t":"foo"}' n
+```
+
+### Query JSON with [JSONPath](http://goessner.net/articles/JsonPath/index.html)
+
+```bash
+echo '{"n":123,"t":"foo"}\n{"n":789,"t":"bar"}' | gsp -qe jsonpath $.n
 ```
 
 ### Encode with Base64

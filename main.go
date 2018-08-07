@@ -12,15 +12,16 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-var jsonpathQuery = flag.String("q", "", "Query in jsonpath")
+var queryEngine = flag.String("qe", processor.JMESPathEngine, "Query engine selection [jmespath|jsonpath] default `jmespath`")
+var queryString = flag.String("q", "", "Query string to be passed in specified query engine")
 var jsonCompressMode = flag.Bool("c", false, "Compress Mode")
 
 var jsonFlag = flag.Bool("json", true, "Flag to process JSON stream")
 var base64encodeFlag = flag.Bool("base64e", false, "Flag to encode the result string with base64")
 var base64decodeFlag = flag.Bool("base64d", false, "Flag to decode the result string with base64")
 
-var inputProcessor = flag.String("i", "text", "InputProcessor [json|base64|text]")
-var outputProcessor = flag.String("o", "text", "OutputProcessor [json|base64|text]")
+var inputProcessor = flag.String("i", "json", "InputProcessor [json]")
+var outputProcessor = flag.String("o", "json", "OutputProcessor [json]")
 
 var lineBreakBytes = []byte("\n")
 
@@ -32,13 +33,13 @@ func main() {
 	switch len(args) {
 	case 2:
 		src = bytes.NewBufferString(args[0])
-		jsonpathQuery = &args[1]
+		queryString = &args[1]
 	case 1:
 		if terminal.IsTerminal(int(os.Stdin.Fd())) {
 			src = bytes.NewBufferString(args[0])
 		} else {
 			src = os.Stdin
-			jsonpathQuery = &args[0]
+			queryString = &args[0]
 		}
 	case 0:
 		src = os.Stdin
@@ -49,7 +50,7 @@ func main() {
 	var p processor.Processor
 	switch {
 	case *jsonFlag:
-		jp := processor.NewJSONProcessor(*jsonpathQuery, *jsonCompressMode)
+		jp := processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode)
 		p = processor.NewMixedProcessor(jp, jp)
 	case *base64decodeFlag:
 		p = processor.NewBase64DecodeProcessor()
@@ -59,14 +60,14 @@ func main() {
 		var in, out processor.ObjectProcessor
 		switch *inputProcessor {
 		case "json":
-			in = processor.NewJSONProcessor(*jsonpathQuery, *jsonCompressMode)
+			in = processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode)
 		default:
 			log.Fatalln("Invalid input processor - " + *inputProcessor)
 		}
 
 		switch *outputProcessor {
 		case "json":
-			out = processor.NewJSONProcessor(*jsonpathQuery, *jsonCompressMode)
+			out = processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode)
 		default:
 			log.Fatalln("Invalid output processor - " + *outputProcessor)
 		}

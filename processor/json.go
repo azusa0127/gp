@@ -3,11 +3,11 @@ package processor
 import (
 	"context"
 	"encoding/json"
-	"log"
-
-	"github.com/TylerBrock/colorjson"
+	"strconv"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/TylerBrock/colorjson"
+	"github.com/jmespath/go-jmespath"
 )
 
 // JSONProcessor is the Processor implementation for JSON input and output
@@ -16,8 +16,15 @@ type JSONProcessor struct {
 	marshalFn func(v interface{}) ([]byte, error)
 }
 
+const (
+	// JMESPathEngine uses JMESPath (http://jmespath.org/) to parse query
+	JMESPathEngine = "jmespath"
+	// JSONPathEngine uses JSONPath (http://goessner.net/articles/JsonPath/index.html) to parse query
+	JSONPathEngine = "jsonpath"
+)
+
 // NewJSONProcessor creates and initializes an JSONProcessor
-func NewJSONProcessor(jsonpathQuery string, compressMode bool) *JSONProcessor {
+func NewJSONProcessor(queryEngine, query string, compressMode bool) *JSONProcessor {
 	return &JSONProcessor{
 		marshalFn: func() func(v interface{}) ([]byte, error) {
 			if compressMode {
@@ -28,13 +35,20 @@ func NewJSONProcessor(jsonpathQuery string, compressMode bool) *JSONProcessor {
 			return jsonFormatter.Marshal
 		}(),
 		evalFn: func() func(v interface{}) (interface{}, error) {
-			if jsonpathQuery != "" {
-				f, err := jsonpath.New(jsonpathQuery)
-				if err != nil {
-					log.Fatal(err)
-				}
-				return func(v interface{}) (interface{}, error) {
-					return f(context.Background(), v)
+			if query != "" {
+				switch queryEngine {
+				case JMESPathEngine:
+					return jmespath.MustCompile(query).Search
+				case JSONPathEngine:
+					f, err := jsonpath.New(query)
+					if err != nil {
+						panic(`jsonpath: Compile(` + strconv.Quote(query) + `): ` + err.Error())
+					}
+					return func(v interface{}) (interface{}, error) {
+						return f(context.Background(), v)
+					}
+				default:
+					panic(`invalid queryEngine - ` + queryEngine)
 				}
 			}
 			return func(v interface{}) (interface{}, error) { return v, nil }
