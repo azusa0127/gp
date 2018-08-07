@@ -1,29 +1,46 @@
-# jg - A command-line JSON processor in Go
+# gsp - a general stream processor for command-line
+
+A tiny tool to focus line-delimited stream processing on CLI.
 
 ## Install
 
 _`go` 1.6 or later is needed for install from source code._
 
 ```bash
-go get -u github.com/azusa0127/jg
-go install github.com/azusa0127/jg
+go get -u github.com/azusa0127/gsp
+go install github.com/azusa0127/gsp
 ```
 
-## Example
+## Usage
+
+### Prettify JSON
 
 ```bash
-# formatting
-$ echo '{"abc":123,"cde":"foo"}' | jg
-{
-  "abc": 123,
-  "cde": "foo"
-}
+echo '{"n":123,"t":"foo"}\n{"n":789,"t":"bar"}' | gsp
+```
 
-# jsonpath
-$ echo '{"abc":123,"cde":"foo"}' | jg $.abc
-123
+### Query JSON with jsonpath
 
-# non pipeing
-$ jg '{\"abc\":123,\"cde\":\"foo\"}' $.abc
-123
+```bash
+echo '{"n":123,"t":"foo"}\n{"n":789,"t":"bar"}' | gsp $.n
+```
+
+```bash
+gsp -q=$.n '{"n":123,"t":"foo"}'
+```
+
+```bash
+gsp '{"n":123,"t":"foo"}' $.n
+```
+
+### Encode with Base64
+
+```bash
+echo '{"n":123,"t":"foo"}\n{"n":789,"t":"bar"}' | gsp -base64e
+```
+
+### Decode with Base64
+
+```bash
+echo '{"n":123,"t":"foo"}\n{"n":789,"t":"bar"}' | gsp -base64e | gsp -base64d
 ```

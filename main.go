@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/azusa0127/jg/processor"
+	"github.com/azusa0127/gsp/processor"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
