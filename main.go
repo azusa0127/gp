@@ -12,17 +12,18 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-var queryEngine = flag.String("qe", processor.JMESPathEngine, "Query engine selection [jmespath|jsonpath] default `jmespath`")
 var queryString = flag.String("q", "", "Query string to be passed in specified query engine")
 
 var jsonCompressMode = flag.Bool("c", false, "Compress Mode")
 var noColorMode = flag.Bool("nc", false, "Flag to prettify output without color")
 
-var jsonFlag = flag.Bool("json", true, "Flag to process JSON stream")
+var jsonFlag = flag.Bool("json", false, "Flag to process JSON stream")
 var base64encodeFlag = flag.Bool("base64e", false, "Flag to encode the result string with base64")
 var base64decodeFlag = flag.Bool("base64d", false, "Flag to decode the result string with base64")
+var toYAMLFlag = flag.Bool("toyaml", false, "Flag to convert JSON steam to yaml")
 
 var inputProcessor = flag.String("i", "json", "InputProcessor [json]")
+var queryEngine = flag.String("qe", "jmespath", "Query engine selection [jmespath|jsonpath] default `jmespath`")
 var outputProcessor = flag.String("o", "json", "OutputProcessor [json]")
 
 var lineBreakBytes = []byte("\n")
@@ -56,24 +57,45 @@ func main() {
 	case *base64encodeFlag:
 		p = processor.NewBase64EncodeProcessor()
 	case *jsonFlag:
-		jp := processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode, *noColorMode)
-		p = processor.NewMixedProcessor(jp, jp)
+		*inputProcessor = "json"
+		*queryEngine = "jmespath"
+		*outputProcessor = "json"
+	case *toYAMLFlag:
+		*inputProcessor = "json"
+		*queryEngine = "jmespath"
+		*outputProcessor = "yaml"
 	default:
-		var in, out processor.ObjectProcessor
+		var in processor.UnmarshalFunction
+		var eval processor.QueryEvalFunction
+		var out processor.MarshalFunction
+
 		switch *inputProcessor {
 		case "json":
-			in = processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode, *noColorMode)
+			in = processor.NewJSONUnmarshalFunction()
 		default:
-			log.Fatalln("Invalid input processor - " + *inputProcessor)
+			log.Fatalln("invalid input processor - " + *inputProcessor)
+		}
+
+		eval = func(v interface{}) (interface{}, error) { return v, nil }
+		if *queryString != "" {
+			switch *queryEngine {
+			case "jmespath":
+				eval = processor.NewJMESPathEvalFunction(*queryString)
+			case "jsonpath":
+				eval = processor.NewJSONPathEvalFunction(*queryString)
+			}
 		}
 
 		switch *outputProcessor {
 		case "json":
-			out = processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode, *noColorMode)
+			out = processor.NewJSONMarshalFunction(*jsonCompressMode, *noColorMode)
+		case "yaml":
+			out = processor.NewYAMLMarshalFunction()
 		default:
-			log.Fatalln("Invalid output processor - " + *outputProcessor)
+			log.Fatalln("invalid output processor - " + *outputProcessor)
 		}
-		p = processor.NewMixedProcessor(in, out)
+
+		p = processor.NewMixedProcessor(in, eval, out)
 	}
 
 	var dst = os.Stdout
