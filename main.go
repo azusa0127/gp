@@ -56,15 +56,18 @@ func main() {
 		p = processor.NewBase64DecodeProcessor()
 	case *base64encodeFlag:
 		p = processor.NewBase64EncodeProcessor()
-	case *jsonFlag:
-		*inputProcessor = "json"
-		*queryEngine = "jmespath"
-		*outputProcessor = "json"
-	case *toYAMLFlag:
-		*inputProcessor = "json"
-		*queryEngine = "jmespath"
-		*outputProcessor = "yaml"
 	default:
+		switch {
+		case *jsonFlag:
+			*inputProcessor = "json"
+			*queryEngine = "jmespath"
+			*outputProcessor = "json"
+		case *toYAMLFlag:
+			*inputProcessor = "json"
+			*queryEngine = "jmespath"
+			*outputProcessor = "yaml"
+		}
+
 		var in processor.UnmarshalFunction
 		var eval processor.QueryEvalFunction
 		var out processor.MarshalFunction
