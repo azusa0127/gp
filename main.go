@@ -51,13 +51,13 @@ func main() {
 
 	var p processor.Processor
 	switch {
-	case *jsonFlag:
-		jp := processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode, *noColorMode)
-		p = processor.NewMixedProcessor(jp, jp)
 	case *base64decodeFlag:
 		p = processor.NewBase64DecodeProcessor()
 	case *base64encodeFlag:
 		p = processor.NewBase64EncodeProcessor()
+	case *jsonFlag:
+		jp := processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode, *noColorMode)
+		p = processor.NewMixedProcessor(jp, jp)
 	default:
 		var in, out processor.ObjectProcessor
 		switch *inputProcessor {
