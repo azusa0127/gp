@@ -50,3 +50,13 @@ echo '{"n":123,"t":"foo"}\n{"n":789,"t":"bar"}' | gsp -base64e
 ```bash
 echo '{"n":123,"t":"foo"}\n{"n":789,"t":"bar"}' | gsp -base64e | gsp -base64d
 ```
+
+### Convert JSON to YAML
+
+```bash
+cat sample.json | gsp -o yaml
+```
+
+```bash
+cat sample.json | gsp -toyaml
+```
