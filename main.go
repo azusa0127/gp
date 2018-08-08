@@ -14,7 +14,9 @@ import (
 
 var queryEngine = flag.String("qe", processor.JMESPathEngine, "Query engine selection [jmespath|jsonpath] default `jmespath`")
 var queryString = flag.String("q", "", "Query string to be passed in specified query engine")
+
 var jsonCompressMode = flag.Bool("c", false, "Compress Mode")
+var noColorMode = flag.Bool("nc", false, "Flag to prettify output without color")
 
 var jsonFlag = flag.Bool("json", true, "Flag to process JSON stream")
 var base64encodeFlag = flag.Bool("base64e", false, "Flag to encode the result string with base64")
@@ -50,7 +52,7 @@ func main() {
 	var p processor.Processor
 	switch {
 	case *jsonFlag:
-		jp := processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode)
+		jp := processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode, *noColorMode)
 		p = processor.NewMixedProcessor(jp, jp)
 	case *base64decodeFlag:
 		p = processor.NewBase64DecodeProcessor()
@@ -60,14 +62,14 @@ func main() {
 		var in, out processor.ObjectProcessor
 		switch *inputProcessor {
 		case "json":
-			in = processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode)
+			in = processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode, *noColorMode)
 		default:
 			log.Fatalln("Invalid input processor - " + *inputProcessor)
 		}
 
 		switch *outputProcessor {
 		case "json":
-			out = processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode)
+			out = processor.NewJSONProcessor(*queryEngine, *queryString, *jsonCompressMode, *noColorMode)
 		default:
 			log.Fatalln("Invalid output processor - " + *outputProcessor)
 		}

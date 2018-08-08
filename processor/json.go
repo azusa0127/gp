@@ -24,15 +24,19 @@ const (
 )
 
 // NewJSONProcessor creates and initializes an JSONProcessor
-func NewJSONProcessor(queryEngine, query string, compressMode bool) *JSONProcessor {
+func NewJSONProcessor(queryEngine, query string, compressMode, noColorMode bool) *JSONProcessor {
 	return &JSONProcessor{
 		marshalFn: func() func(v interface{}) ([]byte, error) {
-			if compressMode {
+			switch {
+			case compressMode:
 				return json.Marshal
+			case noColorMode:
+				return func(v interface{}) ([]byte, error) { return json.MarshalIndent(v, "", "  ") }
+			default:
+				jsonFormatter := colorjson.NewFormatter()
+				jsonFormatter.Indent = 2
+				return jsonFormatter.Marshal
 			}
-			jsonFormatter := colorjson.NewFormatter()
-			jsonFormatter.Indent = 2
-			return jsonFormatter.Marshal
 		}(),
 		evalFn: func() func(v interface{}) (interface{}, error) {
 			if query != "" {
