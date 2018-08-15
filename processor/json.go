@@ -3,7 +3,7 @@ package processor
 import (
 	"encoding/json"
 
-	"github.com/TylerBrock/colorjson"
+	"github.com/hokaccha/go-prettyjson"
 )
 
 func NewJSONUnmarshalFunction() UnmarshalFunction {
@@ -17,8 +17,6 @@ func NewJSONMarshalFunction(compressMode, noColorMode bool) MarshalFunction {
 	case noColorMode:
 		return func(v interface{}) ([]byte, error) { return json.MarshalIndent(v, "", "  ") }
 	default:
-		jsonFormatter := colorjson.NewFormatter()
-		jsonFormatter.Indent = 2
-		return jsonFormatter.Marshal
+		return prettyjson.NewFormatter().Marshal
 	}
 }

@@ -48,12 +48,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 
 
-gsp incorporates Tyler Brock's github.com/TylerBrock/colorjson package, which bears the
+gsp incorporates Kazuhito Hokamura's github.com/hokaccha/go-prettyjson package, which bears the
 following notices:
 
 MIT License
 
-Copyright (c) 2017 Tyler Brock
+Copyright (c) 2018 Kazuhito Hokamura
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
