@@ -75,3 +75,35 @@ func TestNullMarshaller_Marshal(t *testing.T) {
 		})
 	}
 }
+
+func TestNullTransformer_Transform(t *testing.T) {
+	tests := []struct {
+		name string
+		v    interface{}
+	}{
+		{
+			"Transform() should return the exact input back if in []byte",
+			[]byte("abcde"),
+		},
+		{
+			"Transform() should return the error if input in string",
+			"abcde",
+		},
+		{
+			"Transform() should return nil if input in is nil with no error",
+			nil,
+		},
+		{
+			"Transform() should return the exact input back with an input object",
+			&NullMarshaller{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &NullTransformer{}
+			if got := n.Transform(tt.v); !reflect.DeepEqual(got, tt.v) {
+				t.Errorf("NullTransformer.Transform() = %v, want %v", got, tt.v)
+			}
+		})
+	}
+}

@@ -10,12 +10,19 @@ var (
 	ErrInvalidTypeArgV = errors.New("Value of argument v for Marshal()/Unmarshal() is passed in a type unsupported")
 )
 
+// Unmarshaller unmarshals a serialized data into some interface.
 type Unmarshaller interface {
 	Unmarshal(s []byte, v interface{}) error
 }
 
+// Marshaller serializes data byte array.
 type Marshaller interface {
 	Marshal(v interface{}) ([]byte, error)
+}
+
+// Transformer operates on data and changing it along the way.
+type Transformer interface {
+	Transform(v interface{}) interface{}
 }
 
 var (
@@ -51,4 +58,10 @@ func (n *NullMarshaller) Marshal(v interface{}) ([]byte, error) {
 		return nil, ErrNullMarshallerInvalidTypeArgV
 	}
 	return b, nil
+}
+
+type NullTransformer struct{}
+
+func (n *NullTransformer) Transform(v interface{}) interface{} {
+	return v
 }
