@@ -13,7 +13,7 @@ import (
 )
 
 var queryString = flag.String("q", "", "Query string to be passed in specified query engine")
-
+var filterString = flag.String("filter", "", "Filter query to be used")
 var jsonCompressMode = flag.Bool("c", false, "Compress Mode")
 var noColorMode = flag.Bool("nc", false, "Flag to prettify output without color")
 
@@ -69,6 +69,7 @@ func main() {
 		}
 
 		var in processor.UnmarshalFunction
+		var filter processor.QueryEvalFunction
 		var eval processor.QueryEvalFunction
 		var out processor.MarshalFunction
 
@@ -89,6 +90,15 @@ func main() {
 			}
 		}
 
+		if *filterString != "" {
+			switch *queryEngine {
+			case "jmespath":
+				filter = processor.NewJMESPathEvalFunction(*filterString)
+			case "jsonpath":
+				filter = processor.NewJSONPathEvalFunction(*filterString)
+			}
+		}
+
 		switch *outputProcessor {
 		case "json":
 			out = processor.NewJSONMarshalFunction(*jsonCompressMode, *noColorMode)
@@ -98,7 +108,7 @@ func main() {
 			log.Fatalln("invalid output processor - " + *outputProcessor)
 		}
 
-		p = processor.NewMixedProcessor(in, eval, out)
+		p = processor.NewMixedProcessor(in, filter, eval, out)
 	}
 
 	var dst = os.Stdout
@@ -108,11 +118,13 @@ func main() {
 		if buf, err = p.Process(buf, s.Bytes()); err != nil {
 			log.Fatalln(err)
 		}
-		if _, err = dst.Write(buf); err != nil {
-			log.Fatalln(err)
-		}
-		if _, err = dst.Write(lineBreakBytes); err != nil {
-			log.Fatalln(err)
+		if buf != nil {
+			if _, err = dst.Write(buf); err != nil {
+				log.Fatalln(err)
+			}
+			if _, err = dst.Write(lineBreakBytes); err != nil {
+				log.Fatalln(err)
+			}
 		}
 	}
 	if err = s.Err(); err != nil {

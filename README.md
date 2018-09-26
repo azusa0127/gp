@@ -60,3 +60,9 @@ cat sample.json | gsp -o yaml
 ```bash
 cat sample.json | gsp -toyaml
 ```
+
+### Filter by element with JMESPath query
+
+```bash
+cat sample.json | gsp --filter "menu.id=='file'"
+```
