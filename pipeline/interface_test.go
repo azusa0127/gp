@@ -55,10 +55,10 @@ func TestNullMarshaller_Marshal(t *testing.T) {
 			true,
 		},
 		{
-			"Marshal() should return nil if input in is nil with no error",
+			"Marshal() should return nil if input in is nil with ErrNilArgV",
 			nil,
 			nil,
-			false,
+			true,
 		},
 	}
 	for _, tt := range tests {
