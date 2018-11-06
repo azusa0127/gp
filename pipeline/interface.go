@@ -15,6 +15,10 @@ type Unmarshaller interface {
 	Unmarshal(s []byte, v interface{}) error
 }
 
+type Deserializer interface {
+	Parse(s []byte) (interface{}, error)
+}
+
 // Marshaller serializes data byte array.
 type Marshaller interface {
 	Marshal(v interface{}) ([]byte, error)
@@ -45,6 +49,12 @@ func (n *NullUnmarshaller) Unmarshal(s []byte, v interface{}) error {
 	}
 	*ptr = s
 	return nil
+}
+
+type NullDeserializer struct{}
+
+func (n *NullDeserializer) Parse(s []byte) (interface{}, error) {
+	return s, nil
 }
 
 type NullMarshaller struct{}

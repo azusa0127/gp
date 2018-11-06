@@ -107,3 +107,32 @@ func TestNullTransformer_Transform(t *testing.T) {
 		})
 	}
 }
+
+func TestNullDeserializer_Parse(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   []byte
+		want    []byte
+		wantErr bool
+	}{
+		{
+			"Deserialize valid bytes correctly",
+			[]byte("abcde"),
+			[]byte("abcde"),
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &NullDeserializer{}
+			got, err := n.Parse(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NullDeserializer.Parse() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NullDeserializer.Parse() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
